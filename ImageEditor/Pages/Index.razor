@@ -1,0 +1,112 @@
+﻿@page "/"
+
+<MudPaper Class="pa-3 mt-5 mb-4">
+    <MudSpacer />
+    <MudButtonGroup Class="align-center mb-20" Color="Color.Primary" Variant="Variant.Outlined" OverrideStyles="false">
+        <MudFileUpload T="IBrowserFile" FilesChanged="UploadFilesAsync">
+            <ButtonTemplate>
+                <MudButton HtmlTag="label" Variant=Variant.Outlined StartIcon="@Icons.TwoTone.CloudUpload" for="@context">
+                    Select File
+                </MudButton>
+                <MudButton Variant="Variant.Outlined" Disabled="@noAction" StartIcon="@Icons.TwoTone.ImageAspectRatio" OnClick="ShowCropImage">
+                    Crop Image
+                </MudButton>
+                <MudButton Variant="Variant.Outlined" Disabled="@noAction" StartIcon="@Icons.TwoTone.Clear" OnClick="ClearRawImage">
+                    Clear
+                </MudButton>
+            </ButtonTemplate>
+        </MudFileUpload>
+    </MudButtonGroup>
+
+</MudPaper>
+
+
+
+<MudPaper Style="min-height:200px">
+    @if (RawImage is not null)
+    {
+        <Cropper CropperHeight="500" MaxCropedHeight="1080" MaxCropedWidth="1920"
+             @ref="cropper"
+             ImageFile="RawImage"
+             @bind-Ratio="ratio"
+             AspectRatio="proportion==0?1:proportion"
+             RequireAspectRatio="enableProportion"
+             AnimeGifEnable="true"
+             OffsetX="offsetx"
+             OffsetY="offsety"
+             InitCropWidth="initw"
+             InitCropHeight="inith"
+             PureCSharpProcessing="true" />
+    }
+</MudPaper>
+@code {
+    private Cropper cropper;
+    private bool _processing;
+    string Base64image;
+    IBrowserFile? RawImage;
+    IBrowserFile? PreviousRawImage;
+
+    private async Task UploadFilesAsync(IBrowserFile file)
+    {
+        RawImage = file;
+        PreviousRawImage = RawImage;
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        base.OnInitializedAsync();
+    }
+
+    void RestoreRawImage() =>
+        RawImage = PreviousRawImage;
+    void ClearRawImage() =>
+          RawImage = null;
+
+    private async Task ShowCropImage()
+    {
+        _processing = true;
+        PreviousRawImage = RawImage;
+        RawImage = null;
+        ImageCroppedResult crop = await cropper.GetCropedResult();
+        base.StateHasChanged();
+        await Task.Delay(10);
+        Base64image = await crop.GetBase64Async();
+        _processing = false;
+
+        var res = await _dialogService.ShowAsync<CroppedImageDialog>(
+                     "Crop Image",
+                     new DialogParameters{
+                         { "Base64image", Base64image }
+                                         },
+                     new DialogOptions
+                         { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true, CloseOnEscapeKey = false }
+     );
+        RawImage = PreviousRawImage;
+        //var result = await res.Result;
+        //if (result is null) return;
+        //if (result.Canceled) return;
+    }
+
+    bool noAction =>  RawImage == null;
+
+
+    private CropInfo? state;
+
+    private bool show = true;
+
+    private bool isCropLocked = false;
+    private bool isImageLocked = false;
+    private bool enableProportion = false;
+
+    //private string prompt = "Image cropped! Parsing to base64...";
+
+    private int offsetx, offsety;
+    private int initw = 50;
+    private int inith = 50;
+    private int quality = 100;
+
+    private double ratio = 1;
+    private double proportion = 1d;
+    private double width;
+    private double height;
+
+}

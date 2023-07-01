@@ -1,0 +1,75 @@
+﻿<MudDialog Style="min-height:400px">
+    <TitleContent>
+        <div Class="d-flex flex-row pa-4 justify-center">
+            <MudIcon Icon="@Icons.Material.TwoTone.ImageSearch" Size="Size.Large" Color="Color.Primary" />
+            <MudText Typo="Typo.h6">Cropped Image</MudText>
+        </div>
+    </TitleContent>
+    <DialogContent>
+        <div Class="d-flex flex-column flex-grow-1 pa-4 justify-center">
+            <MudButton Variant="Variant.Outlined" OnClick="@(()=>SaveCroppedImage())">Save</MudButton>
+            <MudDivider Class="mt-2" Style="height: 3px; background-color: #2d3133; " />
+            @if (!string.IsNullOrEmpty(@Base64image))
+            {
+                <MudImage Src=@($"data:image/png;base64,{Base64image}")
+                      ObjectPosition="ObjectPosition.Center"
+                      ObjectFit="ObjectFit.Contain"
+                      Class="mt-4" />
+            }
+
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <div class="align-items-end">
+            <MudButton Variant="Variant.Outlined" Size=Size.Medium OnClick="Close">Close</MudButton>
+        </div>
+    </DialogActions>
+</MudDialog>
+@inject IWebHostEnvironment Environment
+@code {
+    [CascadingParameter]
+    private MudDialogInstance MudDialog { get; set; } = null!;
+
+    [CascadingParameter]
+    public IBrowserFile? RawImage { get; set; }
+   
+    [Parameter]
+    public string Base64image { get; set; }
+
+    private async Task SaveCroppedImage()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, Position = DialogPosition.Center };
+        var dialog = _dialogService.Show<ConfirmationDialog>("Confirm Saving", options);
+        var result = await dialog.Result;
+        if (!result.Cancelled)
+        {
+            if (string.IsNullOrEmpty(Environment.ContentRootPath)) //or base64 is null
+            {
+                return;
+            }
+
+            var path = Path.Combine(Environment.ContentRootPath, "wwwroot", "upload");
+
+            if (!Directory.Exists(path))
+                Directory.CreateDirectory(path); //Create path for the images
+
+            var guid = Guid.NewGuid().ToString();
+
+            // Convert the Base64 string to bytes
+            var bytes = Convert.FromBase64String(Base64image);
+
+            // Generate a unique filename or use a predefined one
+            var fileName = $"{guid}{".png"}";
+
+            // Combine the wwwroot path and the filename to get the full image path
+            var imagePath = Path.Combine(path, fileName);
+
+            // Save the image to the wwwroot folder
+            File.WriteAllBytes(imagePath, bytes);
+
+        }
+    }
+   
+    private void Close() => MudDialog.Close(DialogResult.Ok(true));
+
+}

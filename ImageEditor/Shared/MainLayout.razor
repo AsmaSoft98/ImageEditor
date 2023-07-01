@@ -1,0 +1,16 @@
+﻿@inherits LayoutComponentBase
+
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudScrollToTop>
+        <MudFab Icon="@Icons.Material.Filled.ArrowCircleUp" />
+    </MudScrollToTop>
+
+    <MudMainContent Class="mud-background-gray  pt-8 mud-height-full">
+            @Body
+        </MudMainContent>
+
+</MudLayout>
